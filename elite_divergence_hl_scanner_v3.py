@@ -47,15 +47,40 @@ LOG = "elite_divergence_v3.log"
 LOCK = "elite_divergence.lock"
 _LOCK_HANDLE = None
 
+DEFAULT_TIMEFRAMES = ["4h", "1d", "1w"]
+SUPPORTED_TIMEFRAMES = set(DEFAULT_TIMEFRAMES)
+
+
+def parse_timeframes(raw_value):
+    if not raw_value:
+        return DEFAULT_TIMEFRAMES.copy()
+
+    parsed = []
+    for item in raw_value.split(","):
+        tf = item.strip()
+        if tf and tf in SUPPORTED_TIMEFRAMES and tf not in parsed:
+            parsed.append(tf)
+
+    return parsed or DEFAULT_TIMEFRAMES.copy()
+
+
+def parse_int_env(name, default):
+    try:
+        return int(os.getenv(name, str(default)))
+    except (TypeError, ValueError):
+        return default
+
+
 # 15m tamamen iptal. Sadece HTF tarama.
-TIMEFRAMES = ["4h", "1d"]
+TIMEFRAMES = parse_timeframes(os.getenv("DIVERGENCE_TIMEFRAMES"))
 
 LOOKBACK = {
     "4h": 4 * 60 * 60 * 1000 * 300,
     "1d": 24 * 60 * 60 * 1000 * 300,
+    "1w": 7 * 24 * 60 * 60 * 1000 * 300,
 }
 
-SLEEP_SCAN = 900
+SLEEP_SCAN = parse_int_env("SCAN_INTERVAL", 14400)
 SLEEP_CALL = 0.25
 
 RSI_LEN = 14
@@ -75,7 +100,7 @@ NETWORK_RETRIES = 4
 NETWORK_BACKOFF_SEC = 3
 OUTCOME_TP_PCT = 3.0
 OUTCOME_SL_PCT = 2.0
-OUTCOME_TIMEOUT_BARS = {"4h": 12, "1d": 7}
+OUTCOME_TIMEOUT_BARS = {"4h": 12, "1d": 7, "1w": 4}
 
 # GLOBAL_URLLIB_RATE_LIMIT_PATCH
 # Catch every urllib.request.urlopen call in this file, including old direct call paths.
@@ -562,19 +587,28 @@ def run_once():
                     create_outcome_if_missing(coin, tf, side, t, float(p2))
 
                     total += 1
-                    emoji = "🟢" if side == "BULLISH" else "🔴"
                     title = "Bullish Uyumsuzluk" if side == "BULLISH" else "Bearish Uyumsuzluk"
+                    symbol = f"{coin}USDT"
 
                     msg = (
-                        f"{emoji} {BOT_NAME}\n\n"
-                        f"{coin} | {tf}\n"
-                        f"{title}\n\n"
+                        "UYUMSUZLUK SIGNAL\n"
+                        f"Symbol: {symbol}\n"
+                        f"Timeframe: {tf}\n"
+                        f"Side: {side}\n"
+                        f"Title: {title}\n\n"
                         f"Price: {p1:.6g} → {p2:.6g}\n"
                         f"RSI: {r1:.2f} → {r2:.2f}\n"
                         f"Zaman: {fmt(t)}\n\n"
                         f"Not: İşlem sinyali değil, uyumsuzluk tespitidir."
                     )
 
+                    logging.info(
+                        "UYUMSUZLUK SIGNAL Symbol=%s Timeframe=%s Side=%s Time=%s",
+                        symbol,
+                        tf,
+                        side,
+                        fmt(t),
+                    )
                     print(msg, flush=True)
                     tg_send(msg)
                     time.sleep(SLEEP_CALL)
