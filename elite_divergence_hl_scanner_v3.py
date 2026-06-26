@@ -71,6 +71,13 @@ def parse_int_env(name, default):
         return default
 
 
+def parse_bool_env(name, default=False):
+    raw_value = os.getenv(name)
+    if raw_value is None:
+        return default
+    return raw_value.strip().lower() in {"1", "true", "yes", "on"}
+
+
 # 15m tamamen iptal. Sadece HTF tarama.
 TIMEFRAMES = parse_timeframes(os.getenv("DIVERGENCE_TIMEFRAMES"))
 
@@ -81,6 +88,7 @@ LOOKBACK = {
 }
 
 SLEEP_SCAN = parse_int_env("SCAN_INTERVAL", 14400)
+RUN_ONCE = parse_bool_env("RUN_ONCE")
 SLEEP_CALL = 0.25
 
 RSI_LEN = 14
@@ -624,6 +632,11 @@ def run_once():
 def main():
     acquire_single_instance_lock()
     init_db()
+
+    if RUN_ONCE:
+        run_once()
+        return
+
     while True:
         run_once()
         print(f"Uyku: {SLEEP_SCAN} saniye", flush=True)
