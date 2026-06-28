@@ -2,7 +2,7 @@ name: Divergence Scan
 
 on:
   schedule:
-    - cron: "0 */4 * * *"
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -27,6 +27,19 @@ jobs:
           TELEGRAM_TOKEN: ${{ secrets.TELEGRAM_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_ONCE: "true"
-          SCAN_INTERVAL: "14400"
           DIVERGENCE_TIMEFRAMES: "4h,1d,1w"
+
+          USE_SCORE_FILTER: "true"
+          MIN_SIGNAL_SCORE: "5"
+          EMA_TREND_MODE: "soft"
+          EMA_FAST_LEN: "20"
+          EMA_SLOW_LEN: "50"
+          EMA_TOUCH_PCT: "3.0"
+          ATR_LEN: "14"
+          ATR_MIN_PCT: "0.5"
+          ATR_MAX_PCT: "12.0"
+          MOMENTUM_LOOKBACK: "3"
+          RVOL_LEN: "20"
+          RVOL_MIN: "1.2"
+          USE_RVOL_FILTER: "false"
         run: python3 elite_divergence_hl_scanner_v3.py
