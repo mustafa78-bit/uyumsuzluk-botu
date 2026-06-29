@@ -732,6 +732,43 @@ def scan_div(c):
                 break
 
     return out
+
+OUTCOME_SL_PCT = float(os.getenv("OUTCOME_SL_PCT", "2.0"))
+OUTCOME_TP_PCT = float(os.getenv("OUTCOME_TP_PCT", "3.0"))
+
+
+def build_signal_message(symbol, tf, side, t, p1, p2, r1, r2, score, score_details, entry):
+    if side == "BULLISH":
+        direction = "LONG"
+        sl = entry * (1.0 - OUTCOME_SL_PCT / 100.0)
+        tp1 = entry * (1.0 + OUTCOME_TP_PCT / 100.0)
+        tp2 = entry * (1.0 + (OUTCOME_TP_PCT * 2) / 100.0)
+    else:
+        direction = "SHORT"
+        sl = entry * (1.0 + OUTCOME_SL_PCT / 100.0)
+        tp1 = entry * (1.0 - OUTCOME_TP_PCT / 100.0)
+        tp2 = entry * (1.0 - (OUTCOME_TP_PCT * 2) / 100.0)
+
+    return (
+        "SIGNAL\n"
+        f"Symbol: {symbol}\n"
+        f"Timeframe: {tf}\n"
+        f"Direction: {direction}\n"
+        f"Entry: {entry:.6g}\n"
+        f"SL: {sl:.6g}\n"
+        f"TP1: {tp1:.6g}\n"
+        f"TP2: {tp2:.6g}\n\n"
+        "Reason: RSI Divergence\n"
+        f"Side: {side}\n"
+        f"Pivot Price: {p1:.6g} -> {p2:.6g}\n"
+        f"RSI: {r1:.2f} -> {r2:.2f}\n"
+        f"Score: {score:.2f}\n"
+        f"Filter: {details}\n"
+        f"Pivot Time: {fmt(t)}\n\n"
+        "Note: Not financial advice. Confirm chart before entry."
+    )
+
+
 def run_once():
     h = hl_coins()
     coins = sorted(set(x.upper() for x in COINS) & h)
@@ -757,19 +794,9 @@ def run_once():
                     title = "Bullish Uyumsuzluk" if side == "BULLISH" else "Bearish Uyumsuzluk"
                     symbol = f"{coin}USDT"
 
-                    msg = (
-                        "UYUMSUZLUK SIGNAL\n"
-                        f"Symbol: {symbol}\n"
-                        f"Timeframe: {tf}\n"
-                        f"Side: {side}\n"
-                        f"Title: {title}\n\n"
-                        f"Price: {p1:.6g} → {p2:.6g}\n"
-                        f"RSI: {r1:.2f} → {r2:.2f}\n"
-                        f"Score: {score:.2f}\n"
-                        f"Filtre: {score_details}\n"
-                        f"Zaman: {fmt(t)}\n\n"
-                        f"Not: İşlem sinyali değil, uyumsuzluk tespitidir."
-                    )
+                    entry = float(cs[-1]["c"])
+                    symbol = f"{coin}USDT"
+                    msg = build_signal_message(symbol, tf, side, t, p1, p2, r1, r2, score, score_details, entry)
 
                     logging.info(
                         "UYUMSUZLUK SIGNAL Symbol=%s Timeframe=%s Side=%s Time=%s",
