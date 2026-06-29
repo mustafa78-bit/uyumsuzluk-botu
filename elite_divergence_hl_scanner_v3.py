@@ -763,7 +763,7 @@ def build_signal_message(symbol, tf, side, t, p1, p2, r1, r2, score, score_detai
         f"Pivot Price: {p1:.6g} -> {p2:.6g}\n"
         f"RSI: {r1:.2f} -> {r2:.2f}\n"
         f"Score: {score:.2f}\n"
-        f"Filter: {details}\n"
+        f"Filter: {score_details}\n"
         f"Pivot Time: {fmt(t)}\n\n"
         "Note: Not financial advice. Confirm chart before entry."
     )
